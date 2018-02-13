@@ -17,9 +17,17 @@ INITDIR:=/etc/rc.d/init.d
 SYSCONFIGDIR:=/etc/sysconfig
 DESTDIR:=
 
+$(info --------------------------)
+$(info - ebtables            )
+$(info - DESTDIR=$(DESTDIR)     )
+$(info - LIBDIR=$(LIBDIR)       )
+$(info - KERNEL_INCLUDES=$(KERNEL_INCLUDES)       )
+$(info - CC=$(CC)       )
+$(info --------------------------)
+
 CFLAGS:=-Wall -Wunused -Werror
 CFLAGS_SH_LIB:=-fPIC -O3
-CC:=gcc
+CC?=gcc
 
 ifeq ($(shell uname -m),sparc64)
 CFLAGS+=-DEBT_MIN_ALIGN=8 -DKERNEL_64_USERSPACE_32
@@ -157,31 +165,31 @@ tmp3:=$(shell printf $(PIPE) | sed 's/\//\\\//g')
 scripts: ebtables-save ebtables.sysv ebtables-config
 	cat ebtables-save | sed 's/__EXEC_PATH__/$(tmp1)/g' > ebtables-save_
 	mkdir -p $(DESTDIR)$(BINDIR)
-	install -m 0755 -o root -g root ebtables-save_ $(DESTDIR)$(BINDIR)/ebtables-save
+	install -m 0755 ebtables-save_ $(DESTDIR)$(BINDIR)/ebtables-save
 	cat ebtables.sysv | sed 's/__EXEC_PATH__/$(tmp1)/g' | sed 's/__SYSCONFIG__/$(tmp2)/g' > ebtables.sysv_
 	if [ "$(DESTDIR)" != "" ]; then mkdir -p $(DESTDIR)$(INITDIR); fi
-	if test -d $(DESTDIR)$(INITDIR); then install -m 0755 -o root -g root ebtables.sysv_ $(DESTDIR)$(INITDIR)/ebtables; fi
+	if test -d $(DESTDIR)$(INITDIR); then install -m 0755 ebtables.sysv_ $(DESTDIR)$(INITDIR)/ebtables; fi
 	cat ebtables-config | sed 's/__SYSCONFIG__/$(tmp2)/g' > ebtables-config_
 	if [ "$(DESTDIR)" != "" ]; then mkdir -p $(DESTDIR)$(SYSCONFIGDIR); fi
-	if test -d $(DESTDIR)$(SYSCONFIGDIR); then install -m 0600 -o root -g root ebtables-config_ $(DESTDIR)$(SYSCONFIGDIR)/ebtables-config; fi
+	if test -d $(DESTDIR)$(SYSCONFIGDIR); then install -m 0600 ebtables-config_ $(DESTDIR)$(SYSCONFIGDIR)/ebtables-config; fi
 	rm -f ebtables-save_ ebtables.sysv_ ebtables-config_
 
 tmp4:=$(shell printf $(LOCKFILE) | sed 's/\//\\\//g')
 $(MANDIR)/man8/ebtables.8: ebtables.8
 	mkdir -p $(DESTDIR)$(@D)
 	sed -e 's/$$(VERSION)/$(PROGVERSION)/' -e 's/$$(DATE)/$(PROGDATE)/' -e 's/$$(LOCKFILE)/$(tmp4)/' ebtables.8 > ebtables.8_
-	install -m 0644 -o root -g root ebtables.8_ $(DESTDIR)$@
+	install -m 0644 ebtables.8_ $(DESTDIR)$@
 	rm -f ebtables.8_
 
 $(DESTDIR)$(ETHERTYPESFILE): ethertypes
 	mkdir -p $(@D)
-	install -m 0644 -o root -g root $< $@
+	install -m 0644 $< $@
 
 .PHONY: exec
 exec: ebtables ebtables-restore
 	mkdir -p $(DESTDIR)$(BINDIR)
-	install -m 0755 -o root -g root $(PROGNAME) $(DESTDIR)$(BINDIR)/$(PROGNAME)
-	install -m 0755 -o root -g root ebtables-restore $(DESTDIR)$(BINDIR)/ebtables-restore
+	install -m 0755 $(PROGNAME) $(DESTDIR)$(BINDIR)/$(PROGNAME)
+	install -m 0755 ebtables-restore $(DESTDIR)$(BINDIR)/ebtables-restore
 
 .PHONY: install
 install: $(MANDIR)/man8/ebtables.8 $(DESTDIR)$(ETHERTYPESFILE) exec scripts
@@ -205,18 +213,18 @@ release:
 	rm -f extensions/ebt_inat.c
 	rm -rf $(CVSDIRS)
 	mkdir -p include/linux/netfilter_bridge
-	install -m 0644 -o root -g root \
+	install -m 0644 \
 		$(KERNEL_INCLUDES)/linux/netfilter_bridge.h include/linux/
 # To keep possible compile error complaints about undefined ETH_P_8021Q
 # off my back
-	install -m 0644 -o root -g root \
+	install -m 0644 \
 		$(KERNEL_INCLUDES)/linux/if_ether.h include/linux/
-	install -m 0644 -o root -g root \
+	install -m 0644 \
 		$(KERNEL_INCLUDES)/linux/types.h include/linux/
-	install -m 0644 -o root -g root \
+	install -m 0644 \
 		$(KERNEL_INCLUDES)/linux/netfilter_bridge/*.h \
 		include/linux/netfilter_bridge/
-	install -m 0644 -o root -g root \
+	install -m 0644 \
 		include/ebtables.h include/linux/netfilter_bridge/
 	make clean
 	touch *

@@ -130,6 +130,10 @@ recv_new:
 	return msg;
 }
 
+
+extern void get_global_mutex();
+extern void release_global_mutex();
+
 int main(int argc, char **argv)
 {
 	int i, curr_len, pktcnt = 0;
@@ -142,6 +146,7 @@ int main(int argc, char **argv)
 	struct icmphdr *icmph;
 	struct tm* ptm;
 	char time_str[40], *ctmp;
+	get_global_mutex();
 
 	if (argc == 2) {
 		i = strtoul(argv[1], &ctmp, 10);
@@ -157,12 +162,14 @@ int main(int argc, char **argv)
 	sfd = socket(PF_NETLINK, SOCK_RAW, NETLINK_NFLOG);
 	if (!sfd) {
 		perror("socket");
+		release_global_mutex();
 		exit(-1);
 	}
 
 	if (bind(sfd, (struct sockaddr *)(&sa_local), sizeof(sa_local)) ==
 	    -1) {
 		perror("bind");
+		release_global_mutex();
 		exit(-1);
 	}
 	i = setsockopt(sfd, SOL_SOCKET, SO_RCVBUF, &rcvbufsize,
@@ -287,6 +294,7 @@ letscontinue:
 		       "######END#OF##PACKET#DUMP######\n"
 		       "###############################\n");
 	}
+	release_global_mutex();
 
 	return 0;
 }

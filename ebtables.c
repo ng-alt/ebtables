@@ -29,6 +29,9 @@
 #include <signal.h>
 #include "include/ebtables_u.h"
 #include "include/ethernetdb.h"
+#include <unistd.h>
+#include <fcntl.h>
+
 
 /* Checks whether a command has already been specified */
 #define OPT_COMMANDS (replace->flags & OPT_COMMAND || replace->flags & OPT_ZERO)
@@ -112,6 +115,60 @@ static struct ebt_u_table *table;
  * member can change.
  * The same holds for the struct ebt_match and struct ebt_watcher pointers */
 static struct ebt_u_entry *new_entry;
+
+
+#define MUTEX_FILE "/tmp/ebtables.lock"
+
+static struct multiprocess_lock_t {
+    int                 fd;
+    struct flock        lock_struct;
+} multiprocess_lock = {};
+
+/* These two are for inter-process locking */
+void get_global_mutex() {
+    int ret;
+
+    if (multiprocess_lock.fd != 0)
+    {
+        fprintf(stderr, "ebtables: tried to get lock twice.  ignoring second attempt...\n");
+        return;  // ok, this is bad, but not aborting -- attempting to make the best of it...
+    }
+
+    multiprocess_lock.fd = open(MUTEX_FILE, O_NONBLOCK | O_CREAT | O_WRONLY);
+    if (multiprocess_lock.fd == -1) {
+        fprintf(stderr, "could not open file %s\n", MUTEX_FILE);
+        exit(1);
+    }
+
+
+    memset(&multiprocess_lock.lock_struct, 0, sizeof(multiprocess_lock.lock_struct));
+    
+    multiprocess_lock.lock_struct.l_type = F_WRLCK;
+    multiprocess_lock.lock_struct.l_whence = SEEK_SET;
+    multiprocess_lock.lock_struct.l_start = 0;
+    multiprocess_lock.lock_struct.l_len = 0;
+    multiprocess_lock.lock_struct.l_pid = getpid();
+    
+    ret = fcntl(multiprocess_lock.fd, F_SETLKW, &multiprocess_lock.lock_struct);
+    if (ret == -1) {
+       fprintf(stderr, "could not lock file\n");
+       exit(1);
+    }
+    
+    return;
+     
+}
+
+void release_global_mutex() {
+    if(multiprocess_lock.fd != 0) {
+        multiprocess_lock.lock_struct.l_type = F_UNLCK;
+        fcntl(multiprocess_lock.fd, F_SETLK, &multiprocess_lock.lock_struct);
+
+        close(multiprocess_lock.fd);  
+
+        memset(&multiprocess_lock, 0, sizeof(multiprocess_lock));    
+    }
+}
 
 
 static int global_option_offset;

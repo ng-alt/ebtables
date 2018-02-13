@@ -1,4 +1,4 @@
-.TH EBTABLES 8  "$(DATE)"
+.TH EBTABLES 8  "December 2011"
 .\"
 .\" Man page written by Bart De Schuymer <bdschuym@pandora.be>
 .\" It is based on the iptables man page.
@@ -24,7 +24,7 @@
 .\"     
 .\"
 .SH NAME
-ebtables (v$(VERSION)) \- Ethernet bridge frame table administration
+ebtables (v2.0.10-4) \- Ethernet bridge frame table administration
 .SH SYNOPSIS
 .BR "ebtables " [ -t " table ] " - [ ACDI "] chain rule specification [match extensions] [watcher extensions] target"
 .br
@@ -1103,7 +1103,7 @@ arp message and the hardware address length in the arp header is 6 bytes.
 .br
 .SH FILES
 .I /etc/ethertypes
-.I $(LOCKFILE)
+.I /var/lib/ebtables/lock
 .SH ENVIRONMENT VARIABLES
 .I EBTABLES_ATOMIC_FILE
 .SH MAILINGLISTS
